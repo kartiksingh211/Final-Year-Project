@@ -16,16 +16,18 @@ app.use(express.json());
 app.use(cors());
 app.use(clerkMiddleware());
 
-app.get('/', (req, res) => res.send('Server is live!'));
+// test route
+app.get("/", (req, res) => {
+  res.send("Server is live");
+});
 
-// Webhooks
+// inngest
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
-// Routes
+// routes
 app.use("/api/workspaces", protect, workspaceRouter);
 app.use("/api/projects", protect, projectRouter);
 app.use("/api/tasks", protect, taskRouter);
 app.use("/api/comments", protect, commentRouter);
 
-// important for vercel
 export default app;
