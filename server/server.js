@@ -14,11 +14,21 @@ const app = express();
 
 app.use(express.json());
 
+/* FIXED CORS */
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://final-year-project-five-bay.vercel.app"
-  ],
+  origin: function(origin, callback) {
+
+    if (
+      !origin ||
+      origin.includes("localhost") ||
+      origin.includes("vercel.app")
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+
+  },
   credentials: true
 }));
 
