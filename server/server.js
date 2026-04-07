@@ -13,21 +13,33 @@ import { serve } from "inngest/express";
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+
+/* CORS CONFIGURATION (IMPORTANT) */
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://final-year-project-five-bay.vercel.app"
+  ],
+  credentials: true
+}));
+
 app.use(clerkMiddleware());
 
-app.get('/', (req, res) => res.send('Server is live!'));
+/* TEST ROUTE */
+app.get('/', (req, res) => {
+  res.send('Server is live!');
+});
 
-// Webhooks
+/* WEBHOOK ROUTE */
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
-// Routes
+/* API ROUTES */
 app.use("/api/workspaces", protect, workspaceRouter);
 app.use("/api/projects", protect, projectRouter);
 app.use("/api/tasks", protect, taskRouter);
 app.use("/api/comments", protect, commentRouter);
 
-// REQUIRED FOR RENDER
+/* START SERVER (RENDER) */
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
