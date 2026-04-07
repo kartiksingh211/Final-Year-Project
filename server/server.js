@@ -14,7 +14,6 @@ const app = express();
 
 app.use(express.json());
 
-/* CORS CONFIGURATION (IMPORTANT) */
 app.use(cors({
   origin: [
     "http://localhost:5173",
@@ -25,21 +24,15 @@ app.use(cors({
 
 app.use(clerkMiddleware());
 
-/* TEST ROUTE */
-app.get('/', (req, res) => {
-  res.send('Server is live!');
-});
+app.get('/', (req, res) => res.send('Server is live!'));
 
-/* WEBHOOK ROUTE */
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
-/* API ROUTES */
 app.use("/api/workspaces", protect, workspaceRouter);
 app.use("/api/projects", protect, projectRouter);
 app.use("/api/tasks", protect, taskRouter);
 app.use("/api/comments", protect, commentRouter);
 
-/* START SERVER (RENDER) */
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
