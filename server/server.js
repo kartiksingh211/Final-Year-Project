@@ -27,5 +27,9 @@ app.use("/api/projects", protect, projectRouter);
 app.use("/api/tasks", protect, taskRouter);
 app.use("/api/comments", protect, commentRouter);
 
-// important for vercel
-export default app;
+// REQUIRED FOR RENDER
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log("Server running on port", PORT);
+});
