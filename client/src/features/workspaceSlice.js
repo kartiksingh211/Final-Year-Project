@@ -1,14 +1,20 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../configs/api";
 
-// fetch all workspaces
+/* FETCH WORKSPACES WITH CLERK TOKEN */
 export const fetchWorkspaces = createAsyncThunk(
   "workspace/fetchWorkspaces",
-  async () => {
+  async ({ getToken }) => {
 
     try {
 
-      const { data } = await api.get("/api/workspaces");
+      const token = await getToken();
+
+      const { data } = await api.get("/api/workspaces", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       return data.workspaces || [];
 

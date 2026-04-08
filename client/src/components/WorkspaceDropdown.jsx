@@ -3,7 +3,7 @@ import { ChevronDown, Check, Plus } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentWorkspace, fetchWorkspaces } from "../features/workspaceSlice";
 import { useNavigate } from "react-router-dom";
-import { useClerk, useOrganizationList } from "@clerk/clerk-react";
+import { useClerk, useOrganizationList, useAuth } from "@clerk/clerk-react";
 import api from "../configs/api";
 
 function WorkspaceDropdown() {
@@ -12,16 +12,21 @@ function WorkspaceDropdown() {
 
     const { openCreateOrganization } = useClerk();
 
+    const { getToken } = useAuth();
+
     const { workspaces } = useSelector((state) => state.workspace);
+
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
 
     const [isOpen, setIsOpen] = useState(false);
+
     const dropdownRef = useRef(null);
 
     const dispatch = useDispatch();
+
     const navigate = useNavigate();
 
-    // select workspace
+
     const onSelectWorkspace = (organizationId) => {
 
         setActive({ organization: organizationId });
@@ -34,21 +39,30 @@ function WorkspaceDropdown() {
 
     };
 
-    // save workspace in database
+
+    // CREATE WORKSPACE IN DATABASE
     const createWorkspaceInDB = async (org) => {
 
         try {
 
-            await api.post("/api/workspaces", {
+            const token = await getToken();
 
-                id: org.id,
-                name: org.name,
-                image_url: org.imageUrl
+            await api.post(
+                "/api/workspaces",
+                {
+                    id: org.id,
+                    name: org.name,
+                    image_url: org.imageUrl
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
 
-            });
-
-            // refresh workspace list
-            dispatch(fetchWorkspaces());
+            // reload workspace list
+            dispatch(fetchWorkspaces({ getToken }));
 
         } catch (error) {
 
@@ -58,7 +72,8 @@ function WorkspaceDropdown() {
 
     };
 
-    // handle create workspace
+
+    // HANDLE CREATE WORKSPACE
     const handleCreateWorkspace = async () => {
 
         const org = await openCreateOrganization();
@@ -72,6 +87,7 @@ function WorkspaceDropdown() {
         setIsOpen(false);
 
     };
+
 
     // close dropdown when clicking outside
     useEffect(() => {
@@ -92,7 +108,8 @@ function WorkspaceDropdown() {
 
     }, []);
 
-    // set active workspace
+
+    // set active workspace automatically
     useEffect(() => {
 
         if (currentWorkspace && isLoaded) {
@@ -102,6 +119,7 @@ function WorkspaceDropdown() {
         }
 
     }, [currentWorkspace, isLoaded]);
+
 
     return (
 
@@ -142,6 +160,7 @@ function WorkspaceDropdown() {
 
             </button>
 
+
             {isOpen && (
 
                 <div className="absolute z-50 w-64 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded shadow-lg top-full left-0">
@@ -153,6 +172,7 @@ function WorkspaceDropdown() {
                             Workspaces
 
                         </p>
+
 
                         {userMemberships.data.map(({ organization }) => (
 
@@ -184,6 +204,7 @@ function WorkspaceDropdown() {
 
                                 </div>
 
+
                                 {currentWorkspace?.id === organization.id && (
 
                                     <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
@@ -196,7 +217,9 @@ function WorkspaceDropdown() {
 
                     </div>
 
+
                     <hr className="border-gray-200 dark:border-zinc-700" />
+
 
                     <div
                         onClick={handleCreateWorkspace}
