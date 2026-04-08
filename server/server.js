@@ -1,12 +1,16 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+
 import workspaceRouter from "./routes/workspaceRoutes.js";
 import projectRouter from "./routes/projectRoutes.js";
 import taskRouter from "./routes/taskRoutes.js";
 import commentRouter from "./routes/commentRoutes.js";
+
 import { protect } from './middlewares/authMiddleware.js';
+
 import { clerkMiddleware } from '@clerk/express';
+
 import { inngest, functions } from './inngest/index.js';
 import { serve } from "inngest/express";
 
@@ -16,20 +20,10 @@ app.use(express.json());
 
 /* FIXED CORS */
 app.use(cors({
-  origin: function(origin, callback) {
-
-    if (
-      !origin ||
-      origin.includes("localhost") ||
-      origin.includes("vercel.app")
-    ) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-
-  },
-  credentials: true
+  origin: true,
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 }));
 
 app.use(clerkMiddleware());
