@@ -1,16 +1,31 @@
-
 export const protect = async (req, res, next) => {
+
     try {
 
-        const { userId } = await req.auth()
+        // Clerk already attaches auth object
+        const userId = req.auth?.userId;
 
         if (!userId) {
-            return res.status(401).json({ message: "Unauthorized" });
+
+            return res.status(401).json({
+                message: "Unauthorized"
+            });
+
         }
 
-        return next();
+        // attach userId if needed in routes
+        req.userId = userId;
+
+        next();
+
     } catch (error) {
+
         console.log(error);
-        res.status(401).json({ message: error.code || error.message });
+
+        res.status(401).json({
+            message: "Unauthorized"
+        });
+
     }
+
 };
