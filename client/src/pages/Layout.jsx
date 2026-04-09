@@ -19,9 +19,8 @@ const Layout = () => {
 
   const { getToken } = useAuth()
 
-  const { loading, workspaces } = useSelector(
-    (state) => state.workspace
-  )
+  const { loading, workspaces, currentWorkspace } =
+    useSelector((state) => state.workspace)
 
   const dispatch = useDispatch()
 
@@ -45,30 +44,27 @@ const Layout = () => {
   }, [isLoaded, user])
 
 
-  /* restore selected workspace */
+  /* AUTO SELECT FIRST WORKSPACE */
   useEffect(() => {
 
-    if (workspaces.length > 0) {
+    if (
+      workspaces.length > 0 &&
+      !currentWorkspace
+    ) {
 
-      const savedId =
-        localStorage.getItem("currentWorkspaceId")
-
-      if (savedId) {
-
-        dispatch(setCurrentWorkspace(savedId))
-
-      }
+      dispatch(
+        setCurrentWorkspace(workspaces[0].id)
+      )
 
     }
 
   }, [workspaces])
 
 
-  /* loading clerk */
   if (!isLoaded) {
 
     return (
-      <div className='flex items-center justify-center h-screen'>
+      <div className="flex items-center justify-center h-screen">
         <Loader2Icon className="animate-spin" />
       </div>
     )
@@ -76,27 +72,21 @@ const Layout = () => {
   }
 
 
-  /* not logged in */
   if (!user) {
 
     return (
-
       <div className="flex items-center justify-center h-screen">
-
         <SignIn />
-
       </div>
-
     )
 
   }
 
 
-  /* loading workspace */
   if (loading) {
 
     return (
-      <div className='flex items-center justify-center h-screen'>
+      <div className="flex items-center justify-center h-screen">
         <Loader2Icon className="animate-spin" />
       </div>
     )
