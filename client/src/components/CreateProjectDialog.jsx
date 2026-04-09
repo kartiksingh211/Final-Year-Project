@@ -1,422 +1,168 @@
 import { useState } from "react";
-import { XIcon } from "lucide-react";
-import { useAuth } from "@clerk/clerk-react";
 import { useDispatch, useSelector } from "react-redux";
-import { addProject } from "../features/workspaceSlice";
-import toast from "react-hot-toast";
+import { useAuth } from "@clerk/clerk-react";
 import api from "../configs/api";
+import toast from "react-hot-toast";
+import { addProject } from "../features/workspaceSlice";
 
-const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen }) => {
+const CreateProjectDialog = ({
+  isDialogOpen,
+  setIsDialogOpen
+}) => {
 
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
-    const { getToken } = useAuth();
+  const { getToken } = useAuth();
 
-    const { currentWorkspace } = useSelector(
-        (state) => state.workspace
-    );
+  const { currentWorkspace } =
+    useSelector((state) => state.workspace);
 
-    const [formData, setFormData] = useState({
+  const [name, setName] = useState("");
+  const [description, setDescription] =
+    useState("");
 
-        name: "",
-        description: "",
-        status: "PLANNING",
-        priority: "MEDIUM",
-        start_date: "",
-        end_date: "",
-        team_members: [],
-        team_lead: "",
-        progress: 0,
-
-    });
-
-    const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
 
-    const handleSubmit = async (e) => {
+  const handleCreateProject = async () => {
 
-        e.preventDefault();
+    try {
 
-        try {
+      if (!currentWorkspace) {
 
-            if (!currentWorkspace) {
+        toast.error("Workspace not loaded");
 
-                return toast.error("Select workspace first");
+        return;
 
-            }
+      }
 
+      setLoading(true);
 
-            /* auto assign owner as team lead */
+      const token = await getToken();
 
-            let leadEmail = formData.team_lead;
+      const { data } = await api.post(
 
-            if (!leadEmail) {
+        "/api/projects",
 
-                leadEmail =
-                    currentWorkspace?.members?.[0]?.user?.email;
+        {
 
-            }
+          name: name,
 
+          description: description,
 
-            setIsSubmitting(true);
+          workspaceId: currentWorkspace.id
 
+        },
 
-            const token = await getToken();
+        {
 
+          headers: {
 
-            const { data } = await api.post(
+            Authorization:
+              `Bearer ${token}`
 
-                "/api/projects",
-
-                {
-
-                    workspaceId: currentWorkspace.id,
-
-                    name: formData.name,
-
-                    description: formData.description,
-
-                    status: formData.status,
-
-                    priority: formData.priority,
-
-                    start_date: formData.start_date || null,
-
-                    end_date: formData.end_date || null,
-
-                    team_lead: leadEmail,
-
-                    team_members:
-                        formData.team_members.length > 0
-                            ? formData.team_members
-                            : [leadEmail],
-
-                    progress: 0,
-
-                },
-
-                {
-
-                    headers: {
-
-                        Authorization: `Bearer ${token}`,
-
-                    },
-
-                }
-
-            );
-
-
-            dispatch(addProject(data.project));
-
-
-            toast.success("Project created");
-
-
-            setIsDialogOpen(false);
-
-
-            setFormData({
-
-                name: "",
-                description: "",
-                status: "PLANNING",
-                priority: "MEDIUM",
-                start_date: "",
-                end_date: "",
-                team_members: [],
-                team_lead: "",
-                progress: 0,
-
-            });
-
-        } catch (error) {
-
-            toast.error(
-
-                error?.response?.data?.message ||
-
-                error.message
-
-            );
-
-        } finally {
-
-            setIsSubmitting(false);
+          }
 
         }
 
-    };
+      );
 
 
-    if (!isDialogOpen) return null;
+      dispatch(addProject(data.project));
 
+      toast.success("Project created");
 
-    return (
+      setIsDialogOpen(false);
 
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/60 backdrop-blur flex items-center justify-center z-50">
+      setName("");
 
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 w-full max-w-lg relative">
+      setDescription("");
 
+    } catch (error) {
 
-                <button
+      console.log(error);
 
-                    className="absolute top-3 right-3"
+      toast.error(
 
-                    onClick={() => setIsDialogOpen(false)}
+        error?.response?.data?.message ||
 
-                >
+        "Project failed"
 
-                    <XIcon className="size-5" />
+      );
 
-                </button>
+    } finally {
 
+      setLoading(false);
 
-                <h2 className="text-xl font-medium mb-2">
+    }
 
-                    Create New Project
+  };
 
-                </h2>
 
+  if (!isDialogOpen) return null;
 
-                <p className="text-sm text-gray-500 mb-4">
 
-                    Workspace:
+  return (
 
-                    {" "}
+    <div className="fixed inset-0 flex items-center justify-center bg-black/30">
 
-                    <span className="text-blue-600">
+      <div className="bg-white p-6 rounded w-96">
 
-                        {currentWorkspace?.name}
+        <h2 className="text-lg font-semibold mb-3">
 
-                    </span>
+          Create Project
 
-                </p>
+        </h2>
 
 
-                <form onSubmit={handleSubmit} className="space-y-3">
+        <input
+          placeholder="Project name"
+          value={name}
+          onChange={(e) =>
+            setName(e.target.value)
+          }
+          className="border p-2 w-full mb-2"
+        />
 
 
-                    <input
+        <textarea
+          placeholder="Description"
+          value={description}
+          onChange={(e) =>
+            setDescription(e.target.value)
+          }
+          className="border p-2 w-full mb-3"
+        />
 
-                        placeholder="Project name"
 
-                        value={formData.name}
+        <button
 
-                        onChange={(e) =>
+          onClick={handleCreateProject}
 
-                            setFormData({
+          disabled={loading}
 
-                                ...formData,
+          className="bg-blue-500 text-white px-4 py-2 rounded w-full"
 
-                                name: e.target.value,
+        >
 
-                            })
+          {
 
-                        }
+            loading
 
-                        required
+              ? "Creating..."
 
-                        className="w-full p-2 border rounded"
+              : "Create Project"
 
-                    />
+          }
 
+        </button>
 
-                    <textarea
+      </div>
 
-                        placeholder="Description"
+    </div>
 
-                        value={formData.description}
-
-                        onChange={(e) =>
-
-                            setFormData({
-
-                                ...formData,
-
-                                description: e.target.value,
-
-                            })
-
-                        }
-
-                        className="w-full p-2 border rounded"
-
-                    />
-
-
-                    <div className="flex gap-3">
-
-
-                        <select
-
-                            value={formData.status}
-
-                            onChange={(e) =>
-
-                                setFormData({
-
-                                    ...formData,
-
-                                    status: e.target.value,
-
-                                })
-
-                            }
-
-                            className="flex-1 p-2 border rounded"
-
-                        >
-
-                            <option value="PLANNING">
-
-                                Planning
-
-                            </option>
-
-                            <option value="ACTIVE">
-
-                                Active
-
-                            </option>
-
-                            <option value="COMPLETED">
-
-                                Completed
-
-                            </option>
-
-                            <option value="ON_HOLD">
-
-                                On hold
-
-                            </option>
-
-                        </select>
-
-
-                        <select
-
-                            value={formData.priority}
-
-                            onChange={(e) =>
-
-                                setFormData({
-
-                                    ...formData,
-
-                                    priority: e.target.value,
-
-                                })
-
-                            }
-
-                            className="flex-1 p-2 border rounded"
-
-                        >
-
-                            <option value="LOW">
-
-                                Low
-
-                            </option>
-
-                            <option value="MEDIUM">
-
-                                Medium
-
-                            </option>
-
-                            <option value="HIGH">
-
-                                High
-
-                            </option>
-
-                        </select>
-
-
-                    </div>
-
-
-                    <div className="flex gap-3">
-
-
-                        <input
-
-                            type="date"
-
-                            value={formData.start_date}
-
-                            onChange={(e) =>
-
-                                setFormData({
-
-                                    ...formData,
-
-                                    start_date: e.target.value,
-
-                                })
-
-                            }
-
-                            className="flex-1 p-2 border rounded"
-
-                        />
-
-
-                        <input
-
-                            type="date"
-
-                            value={formData.end_date}
-
-                            onChange={(e) =>
-
-                                setFormData({
-
-                                    ...formData,
-
-                                    end_date: e.target.value,
-
-                                })
-
-                            }
-
-                            className="flex-1 p-2 border rounded"
-
-                        />
-
-
-                    </div>
-
-
-                    <button
-
-                        disabled={isSubmitting}
-
-                        className="w-full bg-blue-600 text-white p-2 rounded"
-
-                    >
-
-                        {isSubmitting
-
-                            ? "Creating..."
-
-                            : "Create Project"}
-
-                    </button>
-
-
-                </form>
-
-
-            </div>
-
-        </div>
-
-    );
+  );
 
 };
 
