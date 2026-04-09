@@ -20,7 +20,9 @@ export const fetchWorkspaces = createAsyncThunk(
 
     } catch (error) {
 
-      console.log(error?.response?.data?.message || error.message);
+      console.log(
+        error?.response?.data?.message || error.message
+      );
 
       return [];
 
@@ -41,35 +43,54 @@ const workspaceSlice = createSlice({
 
   reducers: {
 
+    /* SET WORKSPACES */
     setWorkspaces: (state, action) => {
       state.workspaces = action.payload;
     },
 
+    /* SELECT WORKSPACE */
     setCurrentWorkspace: (state, action) => {
 
-      localStorage.setItem("currentWorkspaceId", action.payload);
-
-      state.currentWorkspace = state.workspaces.find(
-        (w) => w.id === action.payload
+      localStorage.setItem(
+        "currentWorkspaceId",
+        action.payload
       );
+
+      state.currentWorkspace =
+        state.workspaces.find(
+          (w) =>
+            String(w.id) === String(action.payload)
+        ) || null;
 
     },
 
+    /* ADD WORKSPACE */
     addWorkspace: (state, action) => {
 
       state.workspaces.push(action.payload);
 
       state.currentWorkspace = action.payload;
 
+      localStorage.setItem(
+        "currentWorkspaceId",
+        action.payload.id
+      );
+
     },
 
+    /* UPDATE WORKSPACE */
     updateWorkspace: (state, action) => {
 
       state.workspaces = state.workspaces.map((w) =>
-        w.id === action.payload.id ? action.payload : w
+        w.id === action.payload.id
+          ? action.payload
+          : w
       );
 
-      if (state.currentWorkspace?.id === action.payload.id) {
+      if (
+        state.currentWorkspace?.id ===
+        action.payload.id
+      ) {
 
         state.currentWorkspace = action.payload;
 
@@ -77,81 +98,129 @@ const workspaceSlice = createSlice({
 
     },
 
+    /* DELETE WORKSPACE */
     deleteWorkspace: (state, action) => {
 
-      state.workspaces = state.workspaces.filter(
-        (w) => w.id !== action.payload
-      );
+      state.workspaces =
+        state.workspaces.filter(
+          (w) => w.id !== action.payload
+        );
+
+      if (
+        state.currentWorkspace?.id ===
+        action.payload
+      ) {
+
+        state.currentWorkspace = null;
+
+        localStorage.removeItem(
+          "currentWorkspaceId"
+        );
+
+      }
 
     },
 
+    /* ADD PROJECT */
     addProject: (state, action) => {
 
-      state.currentWorkspace.projects.push(action.payload);
+      if (!state.currentWorkspace) return;
 
-      state.workspaces = state.workspaces.map((w) =>
-        w.id === state.currentWorkspace.id
-          ? {
-              ...w,
-              projects: w.projects.concat(action.payload),
-            }
-          : w
+      state.currentWorkspace.projects =
+        state.currentWorkspace.projects || [];
+
+      state.currentWorkspace.projects.push(
+        action.payload
       );
 
     },
 
+    /* ADD TASK */
     addTask: (state, action) => {
 
+      if (!state.currentWorkspace) return;
+
       state.currentWorkspace.projects =
-        state.currentWorkspace.projects.map((p) => {
+        state.currentWorkspace.projects.map(
+          (project) => {
 
-          if (p.id === action.payload.projectId) {
+            if (
+              project.id ===
+              action.payload.projectId
+            ) {
 
-            p.tasks.push(action.payload);
+              project.tasks =
+                project.tasks || [];
+
+              project.tasks.push(action.payload);
+
+            }
+
+            return project;
 
           }
-
-          return p;
-
-        });
+        );
 
     },
 
+    /* UPDATE TASK */
     updateTask: (state, action) => {
 
+      if (!state.currentWorkspace) return;
+
       state.currentWorkspace.projects =
-        state.currentWorkspace.projects.map((p) => {
+        state.currentWorkspace.projects.map(
+          (project) => {
 
-          if (p.id === action.payload.projectId) {
+            if (
+              project.id ===
+              action.payload.projectId
+            ) {
 
-            p.tasks = p.tasks.map((t) =>
-              t.id === action.payload.id ? action.payload : t
-            );
+              project.tasks =
+                project.tasks.map((task) =>
+                  task.id === action.payload.id
+                    ? action.payload
+                    : task
+                );
+
+            }
+
+            return project;
 
           }
-
-          return p;
-
-        });
+        );
 
     },
 
+    /* DELETE TASK */
     deleteTask: (state, action) => {
 
+      if (!state.currentWorkspace) return;
+
       state.currentWorkspace.projects =
-        state.currentWorkspace.projects.map((p) => {
+        state.currentWorkspace.projects.map(
+          (project) => {
 
-          if (p.id === action.payload.projectId) {
+            if (
+              project.id ===
+              action.payload.projectId
+            ) {
 
-            p.tasks = p.tasks.filter(
-              (t) => !action.payload.taskIds.includes(t.id)
-            );
+              project.tasks =
+                project.tasks.filter(
+                  (task) =>
+                    !action.payload.taskIds.includes(
+                      task.id
+                    )
+                );
+
+            }
+
+            return project;
 
           }
-
-          return p;
-
-        });
+        );
 
     },
 
@@ -159,39 +228,68 @@ const workspaceSlice = createSlice({
 
   extraReducers: (builder) => {
 
-    builder.addCase(fetchWorkspaces.pending, (state) => {
+    builder.addCase(
+      fetchWorkspaces.pending,
+      (state) => {
 
-      state.loading = true;
-
-    });
-
-    builder.addCase(fetchWorkspaces.fulfilled, (state, action) => {
-
-      state.workspaces = action.payload;
-
-      if (action.payload.length > 0) {
-
-        const savedWorkspaceId =
-          localStorage.getItem("currentWorkspaceId");
-
-        const foundWorkspace = action.payload.find(
-          (w) => w.id === savedWorkspaceId
-        );
-
-        state.currentWorkspace =
-          foundWorkspace || action.payload[0];
+        state.loading = true;
 
       }
+    );
 
-      state.loading = false;
+    builder.addCase(
+      fetchWorkspaces.fulfilled,
+      (state, action) => {
 
-    });
+        state.workspaces = action.payload;
 
-    builder.addCase(fetchWorkspaces.rejected, (state) => {
+        if (action.payload.length > 0) {
 
-      state.loading = false;
+          const savedWorkspaceId =
+            localStorage.getItem(
+              "currentWorkspaceId"
+            );
 
-    });
+          if (savedWorkspaceId) {
+
+            const foundWorkspace =
+              action.payload.find(
+                (workspace) =>
+                  String(workspace.id) ===
+                  String(savedWorkspaceId)
+              );
+
+            state.currentWorkspace =
+              foundWorkspace ||
+              action.payload[0];
+
+          } else {
+
+            state.currentWorkspace =
+              action.payload[0];
+
+            localStorage.setItem(
+              "currentWorkspaceId",
+              action.payload[0].id
+            );
+
+          }
+
+        }
+
+        state.loading = false;
+
+      }
+    );
+
+    builder.addCase(
+      fetchWorkspaces.rejected,
+      (state) => {
+
+        state.loading = false;
+
+      }
+    );
 
   },
 
