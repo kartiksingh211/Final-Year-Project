@@ -16,13 +16,21 @@ const WorkspaceDropdown = () => {
 
   const handleSelect = async (workspace) => {
 
-    /* set active org in Clerk */
-    await setActive({
-      organization: workspace.id,
-    });
+    try {
 
-    /* save in redux */
-    dispatch(setCurrentWorkspace(workspace.id));
+      // set active organization in Clerk
+      await setActive({
+        organization: workspace.id,
+      });
+
+      // set workspace in redux
+      dispatch(setCurrentWorkspace(workspace.id));
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
 
   };
 
@@ -35,7 +43,9 @@ const WorkspaceDropdown = () => {
       </p>
 
       {workspaces.length === 0 && (
-        <p>No workspace found</p>
+        <p className="text-sm text-gray-400">
+          No workspace found
+        </p>
       )}
 
       {workspaces.map((workspace) => (
@@ -45,11 +55,14 @@ const WorkspaceDropdown = () => {
 
           onClick={() => handleSelect(workspace)}
 
-          className={`p-2 rounded cursor-pointer mb-1 transition ${
-            currentWorkspace?.id === workspace.id
-              ? "bg-blue-500 text-white"
-              : "hover:bg-gray-200 dark:hover:bg-zinc-800"
-          }`}
+          className={`
+            p-2 mb-1 rounded cursor-pointer transition
+            ${
+              currentWorkspace?.id === workspace.id
+                ? "bg-blue-500 text-white"
+                : "hover:bg-gray-100 dark:hover:bg-zinc-800"
+            }
+          `}
         >
 
           {workspace.name}
