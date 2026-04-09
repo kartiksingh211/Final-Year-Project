@@ -1,31 +1,41 @@
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentWorkspace } from "../features/workspaceSlice";
+import { useOrganizationList } from "@clerk/clerk-react";
 
-const WorkspaceDropdown = ({ closeDropdown }) => {
+const WorkspaceDropdown = () => {
 
   const dispatch = useDispatch();
+
+  const { setActive } = useOrganizationList({
+    userMemberships: true,
+  });
 
   const { workspaces, currentWorkspace } = useSelector(
     (state) => state.workspace
   );
 
-  const handleSelect = (workspace) => {
+  const handleSelect = async (workspace) => {
 
+    /* set active org in Clerk */
+    await setActive({
+      organization: workspace.id,
+    });
+
+    /* save in redux */
     dispatch(setCurrentWorkspace(workspace.id));
-
-    /* optional: close dropdown */
-    if (closeDropdown) closeDropdown();
 
   };
 
   return (
 
-    <div className="bg-white dark:bg-zinc-900 shadow-lg rounded-lg p-2 w-56">
+    <div className="p-3">
+
+      <p className="text-sm text-gray-500 mb-2">
+        Select Workspace
+      </p>
 
       {workspaces.length === 0 && (
-        <p className="p-2 text-sm text-gray-500">
-          No workspace found
-        </p>
+        <p>No workspace found</p>
       )}
 
       {workspaces.map((workspace) => (
@@ -35,14 +45,11 @@ const WorkspaceDropdown = ({ closeDropdown }) => {
 
           onClick={() => handleSelect(workspace)}
 
-          className={`
-            px-3 py-2 rounded-md cursor-pointer text-sm
-            ${
-              currentWorkspace?.id === workspace.id
-                ? "bg-blue-500 text-white"
-                : "hover:bg-gray-100 dark:hover:bg-zinc-800"
-            }
-          `}
+          className={`p-2 rounded cursor-pointer mb-1 transition ${
+            currentWorkspace?.id === workspace.id
+              ? "bg-blue-500 text-white"
+              : "hover:bg-gray-200 dark:hover:bg-zinc-800"
+          }`}
         >
 
           {workspace.name}
@@ -50,16 +57,6 @@ const WorkspaceDropdown = ({ closeDropdown }) => {
         </div>
 
       ))}
-
-      <div className="border-t mt-2 pt-2">
-
-        <button
-          className="text-blue-500 text-sm px-2"
-        >
-          + Create Workspace
-        </button>
-
-      </div>
 
     </div>
 
