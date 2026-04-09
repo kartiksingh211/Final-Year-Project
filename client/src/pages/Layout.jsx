@@ -4,84 +4,133 @@ import Sidebar from '../components/Sidebar'
 import { Outlet } from 'react-router-dom'
 import { SignIn, useAuth, useUser } from '@clerk/clerk-react'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchWorkspaces } from '../features/workspaceSlice'
+import {
+  fetchWorkspaces,
+  setCurrentWorkspace
+} from '../features/workspaceSlice'
 import { loadTheme } from '../features/themeSlice'
 import { Loader2Icon } from 'lucide-react'
 
 const Layout = () => {
 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
-    const { user, isLoaded } = useUser()
-    const { getToken } = useAuth()
+  const { user, isLoaded } = useUser()
 
-    const { loading } = useSelector((state) => state.workspace)
+  const { getToken } = useAuth()
 
-    const dispatch = useDispatch()
+  const { loading, workspaces } = useSelector(
+    (state) => state.workspace
+  )
 
-    // Load theme
-    useEffect(() => {
-        dispatch(loadTheme())
-    }, [])
+  const dispatch = useDispatch()
 
-    // Fetch workspaces (not blocking UI anymore)
-    useEffect(() => {
-        if (isLoaded && user) {
-            dispatch(fetchWorkspaces({ getToken }))
-        }
-    }, [isLoaded, user])
+  /* load theme */
+  useEffect(() => {
 
-    // Show loading while Clerk loads
-    if (!isLoaded) {
-        return (
-            <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
-                <Loader2Icon className="size-7 text-blue-500 animate-spin" />
-            </div>
-        )
+    dispatch(loadTheme())
+
+  }, [])
+
+
+  /* fetch workspaces */
+  useEffect(() => {
+
+    if (isLoaded && user) {
+
+      dispatch(fetchWorkspaces({ getToken }))
+
     }
 
-    // If not logged in → show sign in page
-    if (!user) {
-        return (
-            <div className="flex justify-center items-center h-screen bg-white dark:bg-zinc-950">
-                <SignIn />
-            </div>
-        )
+  }, [isLoaded, user])
+
+
+  /* restore selected workspace */
+  useEffect(() => {
+
+    if (workspaces.length > 0) {
+
+      const savedId =
+        localStorage.getItem("currentWorkspaceId")
+
+      if (savedId) {
+
+        dispatch(setCurrentWorkspace(savedId))
+
+      }
+
     }
 
-    // Show loader while workspace API loads
-    if (loading) {
-        return (
-            <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
-                <Loader2Icon className="size-7 text-blue-500 animate-spin" />
-            </div>
-        )
-    }
+  }, [workspaces])
 
-    // MAIN APP UI (no blocking CreateOrganization loop)
+
+  /* loading clerk */
+  if (!isLoaded) {
+
     return (
-        <div className="flex bg-white dark:bg-zinc-950 text-gray-900 dark:text-slate-100">
+      <div className='flex items-center justify-center h-screen'>
+        <Loader2Icon className="animate-spin" />
+      </div>
+    )
 
-            <Sidebar
-                isSidebarOpen={isSidebarOpen}
-                setIsSidebarOpen={setIsSidebarOpen}
-            />
+  }
 
-            <div className="flex-1 flex flex-col h-screen">
 
-                <Navbar
-                    isSidebarOpen={isSidebarOpen}
-                    setIsSidebarOpen={setIsSidebarOpen}
-                />
+  /* not logged in */
+  if (!user) {
 
-                <div className="flex-1 h-full p-6 xl:p-10 xl:px-16 overflow-y-scroll">
-                    <Outlet />
-                </div>
+    return (
 
-            </div>
+      <div className="flex items-center justify-center h-screen">
+
+        <SignIn />
+
+      </div>
+
+    )
+
+  }
+
+
+  /* loading workspace */
+  if (loading) {
+
+    return (
+      <div className='flex items-center justify-center h-screen'>
+        <Loader2Icon className="animate-spin" />
+      </div>
+    )
+
+  }
+
+
+  return (
+
+    <div className="flex h-screen">
+
+      <Sidebar
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+      />
+
+      <div className="flex-1 flex flex-col">
+
+        <Navbar
+          setIsSidebarOpen={setIsSidebarOpen}
+        />
+
+        <div className="flex-1 overflow-auto p-6">
+
+          <Outlet />
 
         </div>
-    )
+
+      </div>
+
+    </div>
+
+  )
+
 }
 
 export default Layout
